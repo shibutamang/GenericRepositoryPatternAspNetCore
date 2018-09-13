@@ -8,10 +8,11 @@ namespace GenericRepositoryPatternAspNetCore.Repository
 {
     public interface IRepository<TEntity> where TEntity: class
     {
-        IEnumerable<TEntity> GetAll();
-        TEntity Get(long id);
-        void Insert(TEntity entity);
-        void Update(TEntity entity);
-        void Delete(TEntity entity);
+        Task<IEnumerable<TEntity>> GetAll();
+        Task<TEntity> Get(int id);
+        Task Insert(TEntity entity);
+        Task Update(TEntity entity);
+        Task Delete(TEntity entity);
+        Task SaveChange();
     }
 }

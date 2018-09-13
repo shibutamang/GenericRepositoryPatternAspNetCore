@@ -2,36 +2,47 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using GenericRepository.Data.Repository;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using GenericRepositoryPatternAspNetCore;
 using GenericRepositoryPatternAspNetCore.Models;
 using GenericRepositoryPatternAspNetCore.Repository;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 
 namespace GenericRepositoryPatternAspNetCore.Controllers
 {
     public class BooksController : Controller
     {
-        private IRepository<Book> _repository;
+        private readonly IRepository<Book> _repository;
+
         public BooksController(IRepository<Book> repository)
         {
             _repository = repository;
         }
+
         // GET: Books
-        public ActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            List<Book> books = _repository.GetAll().ToList();
+            var books = await _repository.GetAll();
             return View(books);
         }
 
         // GET: Books/Details/5
-        public ActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            return View();
+
+            Book book = await _repository.Get(id);
+
+            if (book == null)
+            {
+                return NotFound();
+            }
+
+            return View(book);
         }
 
         // GET: Books/Create
-        public ActionResult Create()
+        public IActionResult Create()
         {
             return View();
         }
@@ -39,64 +50,88 @@ namespace GenericRepositoryPatternAspNetCore.Controllers
         // POST: Books/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public async Task<IActionResult> Create([Bind("Id,Name,Publisher,Price,Author")] Book book)
         {
-            try
+            if (ModelState.IsValid)
             {
-                // TODO: Add insert logic here
-
+                await _repository.Insert(book);
+                await _repository.SaveChange();
                 return RedirectToAction(nameof(Index));
             }
-            catch
-            {
-                return View();
-            }
+            return View(book);
         }
 
         // GET: Books/Edit/5
-        public ActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            return View();
+            var book = await _repository.Get(id);
+            if (book == null)
+            {
+                return NotFound();
+            }
+            return View(book);
         }
 
         // POST: Books/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Publisher,Price,Author")] Book book)
         {
-            try
+            if (id != book.Id)
             {
-                // TODO: Add update logic here
+                return NotFound();
+            }
 
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    await _repository.Update(book);
+                    await _repository.SaveChange();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!BookExists(book.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
-            catch
-            {
-                return View();
-            }
+            return View(book);
         }
 
         // GET: Books/Delete/5
-        public ActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            return View();
+
+            var book = await _repository.Get(id);
+            if (book == null)
+            {
+                return NotFound();
+            }
+
+            return View(book);
         }
 
         // POST: Books/Delete/5
-        [HttpPost]
+        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            try
-            {
-                // TODO: Add delete logic here
+            var book = await _repository.Get(id);
+            await _repository.Delete(book);
+            await _repository.SaveChange();
+            return RedirectToAction(nameof(Index));
+        }
 
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+        private bool BookExists(int id)
+        {
+            return _context.Books.Any(e => e.Id == id);
         }
     }
 }

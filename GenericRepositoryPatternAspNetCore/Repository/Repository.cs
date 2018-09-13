@@ -17,27 +17,29 @@ namespace GenericRepository.Data.Repository
             _dbContext = dbContext;
         }
 
-        public IEnumerable<TEntity> GetAll()
+        public async Task<IEnumerable<TEntity>> GetAll()
         {
-            return _dbContext.Set<TEntity>().AsEnumerable();
+            var items = await _dbContext.Set<TEntity>().ToListAsync();
+            return items;
         }
 
-        public TEntity Get(long id)
+        public async Task<TEntity> Get(int id)
         {
-            return _dbContext.Set<TEntity>().Find(id);
+            var result = await _dbContext.Set<TEntity>().FindAsync(id);
+            return result;
         }
 
-        public void Insert(TEntity entity)
+        public async Task Insert(TEntity entity)
         {
             if (entity == null)
             {
                 throw new ArgumentNullException("entity");
             }
 
-            _dbContext.Set<TEntity>().Add(entity);
+            await _dbContext.Set<TEntity>().AddAsync(entity);
         }
 
-        public void Update(TEntity entity)
+        public async Task Update(TEntity entity)
         {
             if (entity == null)
             {
@@ -45,12 +47,16 @@ namespace GenericRepository.Data.Repository
             }
 
             _dbContext.Entry(entity).State = EntityState.Modified;
-            _dbContext.SaveChanges();
         }
 
-        public void Delete(TEntity entity)
+        public async Task Delete(TEntity entity)
         {
-            _dbContext.Set<TEntity>().Remove(entity);
+             _dbContext.Set<TEntity>().Remove(entity);
+        }
+
+        public async Task SaveChange()
+        {
+            await _dbContext.SaveChangesAsync();
         }
 
     }
